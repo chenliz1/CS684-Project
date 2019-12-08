@@ -1,3 +1,4 @@
 .idea/*
-data/*
+data/2011_*
+data/depth_*
 *.ipynb
