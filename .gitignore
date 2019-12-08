@@ -1,5 +1,6 @@
 .idea/*
-data/2011_*
-data/depth_*
+data/data_depth_annotated
+data/depth_selection
+data/kitti_data
 data/dataset
 *.ipynb
