@@ -4,6 +4,8 @@ from PIL import Image
 import numpy as np
 
 train_data_folders = ["2011_09_26_drive_0001_sync", "2011_09_29_drive_0071_sync"]
+annotation = "data_depth_annotated/train/"
+kitti = "kitti_data/2011_09_26"
 
 val_img_path = "depth_selection/val_selection_cropped/image/"
 val_gts_path = "depth_selection/val_selection_cropped/groundtruth_depth/"
@@ -47,12 +49,14 @@ def valImages(img_path, gts_path, target_path):
         gts.save(os.path.join(target_gts_path, target_name + ".png"))
 
 
-def trainImages(train_data_folders, target_path):
+def trainImages(kitti, annotation, target_path):
+    train_data_folders = list(glob.glob1(kitti, "2011_09_26_drive_*_sync"))
+    train_data_folders.sort()
+
     counter = 0
     for folder in train_data_folders:
-
-        img_path = os.path.join(folder, "image_02/data")
-        gts_path = os.path.join(folder, "proj_depth/groundtruth/image_02/")
+        img_path = os.path.join(kitti, folder, "image_02/data")
+        gts_path = os.path.join(annotation, folder, "proj_depth/groundtruth/image_02/")
 
         img_list = list(glob.glob1(img_path, "*.png"))
         img_list.sort()
@@ -70,11 +74,10 @@ def trainImages(train_data_folders, target_path):
             img.save(os.path.join(target_img_path, target_name + ".jpg"))
 
             gts = Image.open(os.path.join(gts_path, gts_list[i]))
-            gts = gts.convert('L')
             gts.save(os.path.join(target_gts_path, target_name + ".png"))
             counter += 1
 
 
 makeDirs()
-trainImages(train_data_folders, target_train_path)
+trainImages(kitti, annotation, target_train_path)
 valImages(val_img_path, val_gts_path, target_val_path)
