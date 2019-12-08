@@ -1,4 +1,5 @@
 .idea/*
 data/2011_*
 data/depth_*
+data/dataset
 *.ipynb
