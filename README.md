@@ -26,15 +26,14 @@
  |-------- datasetCreator.py<br>
  |-------- read_depth.py<br></p>
  |-------- /2011_09_26_drive_0001_sync<br>
- |------------ ...<br>
+ |------------ (Some other folders)<br>
  |------------ /image_02<br>
  |------------ /proj_depth<br>
- |------------ ...<br>
  |-------- /2011_09_29_drive_0071_sync<br>
- |------------ ...<br>
+ |------------ (Some other folders)<br>
  |------------ /image_02<br>
  |------------ /proj_depth<br>
- |------------ ...<br>
+
 
 
 2. Under "CS684-Project/data/", run datasetCreator.py.
