@@ -38,7 +38,7 @@ def valImages(img_path, gts_path, target_path):
     target_img_path = os.path.join(target_path, "image/")
     target_gts_path = os.path.join(target_path, "groundtruth/")
 
-    for i in range(3):#len(gts_list)):
+    for i in range(len(gts_list)):
         target_name = str(i).zfill(5)
 
         img = Image.open(os.path.join(img_path, img_list[i]))
