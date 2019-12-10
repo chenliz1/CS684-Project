@@ -23,30 +23,43 @@ def makeDirs():
         os.mkdir("dataset/train")
 
     for str in ["dataset/train", "dataset/val"]:
-        for target in ["image", "groundtruth"]:
+        for target in ["image_left", "image_right"]:
             if not (os.path.isdir(os.path.join(str, target))):
                 os.mkdir(os.path.join(str, target))
 
 
 
 def valImages(img_path, gts_path, target_path):
-    img_list = list(glob.glob1(img_path, "*.png"))
-    img_list.sort()
-    gts_list = list(glob.glob1(gts_path, "*.png"))
-    gts_list.sort()
+    imgL_list = list(glob.glob1(img_path, "*_02.png"))
+    imgL_list.sort()
 
-    target_img_path = os.path.join(target_path, "image/")
-    target_gts_path = os.path.join(target_path, "groundtruth/")
+    imgR_list = list(glob.glob1(img_path, "*_03.png"))
+    imgR_list.sort()
 
-    for i in range(len(gts_list)):
+    # gtsL_list = list(glob.glob1(gts_path, "*_02.png"))
+    # gtsL_list.sort()
+    #
+    # gtsR_list = list(glob.glob1(gts_path, "*_03.png"))
+    # gtsR_list.sort()
+
+    target_imgL_path = os.path.join(target_path, "image_left/")
+    target_imgR_path = os.path.join(target_path, "image_right/")
+    # target_gtsL_path = os.path.join(target_path, "groundtruth_left/")
+    # target_gtsR_path = os.path.join(target_path, "groundtruth_right/")
+
+    for i in range(len(imgL_list)):
         target_name = str(i).zfill(5)
 
-        img = Image.open(os.path.join(img_path, img_list[i]))
-        img = img.convert('RGB')
-        img.save(os.path.join(target_img_path, target_name + ".jpg"))
+        imgL = Image.open(os.path.join(img_path, imgL_list[i]))
+        imgL = imgL.convert('RGB')
+        imgL.save(os.path.join(target_imgL_path, target_name + ".jpg"))
 
-        gts = Image.open(os.path.join(gts_path, gts_list[i]))
-        gts.save(os.path.join(target_gts_path, target_name + ".png"))
+        imgR = Image.open(os.path.join(img_path, imgR_list[i]))
+        imgR = imgR.convert('RGB')
+        imgR.save(os.path.join(target_imgR_path, target_name + ".jpg"))
+
+        # gts = Image.open(os.path.join(gts_path, gts_list[i]))
+        # gts.save(os.path.join(target_gts_path, target_name + ".png"))
 
 
 def trainImages(kitti, annotation, target_path):
@@ -55,26 +68,34 @@ def trainImages(kitti, annotation, target_path):
 
     counter = 0
     for folder in train_data_folders:
-        img_path = os.path.join(kitti, folder, "image_02/data")
-        gts_path = os.path.join(annotation, folder, "proj_depth/groundtruth/image_02/")
+        imgL_path = os.path.join(kitti, folder, "image_02/data")
+        imgR_path = os.path.join(kitti, folder, "image_03/data")
+        # gts_path = os.path.join(annotation, folder, "proj_depth/groundtruth/image_02/")
 
-        img_list = list(glob.glob1(img_path, "*.png"))
-        img_list.sort()
-        gts_list = list(glob.glob1(gts_path, "*.png"))
-        gts_list.sort()
+        imgL_list = list(glob.glob1(imgL_path, "*.png"))
+        imgL_list.sort()
+        imgR_list = list(glob.glob1(imgR_path, "*.png"))
+        imgR_list.sort()
+        # gts_list = list(glob.glob1(gts_path, "*.png"))
+        # gts_list.sort()
 
-        target_img_path = os.path.join(target_path, "image/")
-        target_gts_path = os.path.join(target_path, "groundtruth/")
+        target_imgL_path = os.path.join(target_path, "image_left/")
+        target_imgR_path = os.path.join(target_path, "image_right/")
+        # target_gts_path = os.path.join(target_path, "groundtruth/")
 
-        for i in range(len(gts_list)):
+        for i in range(len(imgL_list)):
             target_name = str(counter).zfill(5)
 
-            img = Image.open(os.path.join(img_path, gts_list[i]))
-            img = img.convert('RGB')
-            img.save(os.path.join(target_img_path, target_name + ".jpg"))
+            imgL = Image.open(os.path.join(imgL_path, imgL_list[i]))
+            imgL = imgL.convert('RGB')
+            imgL.save(os.path.join(target_imgL_path, target_name + ".jpg"))
 
-            gts = Image.open(os.path.join(gts_path, gts_list[i]))
-            gts.save(os.path.join(target_gts_path, target_name + ".png"))
+            imgR = Image.open(os.path.join(imgR_path, imgR_list[i]))
+            imgR = imgR.convert('RGB')
+            imgR.save(os.path.join(target_imgR_path, target_name + ".jpg"))
+
+            # gts = Image.open(os.path.join(gts_path, gts_list[i]))
+            # gts.save(os.path.join(target_gts_path, target_name + ".png"))
             counter += 1
 
 

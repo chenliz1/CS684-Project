@@ -18,9 +18,9 @@ def pil_loader(path):
         with Image.open(f) as img:
             return img.convert('RGB')
 
-class depthDataset(data.Dataset):
+class TwoViewDataset(data.Dataset):
     def __init__(self, data_path, resize_shape=(1242, 375), is_train=False):
-        super(depthDataset, self).__init__()
+        super(TwoViewDataset, self).__init__()
         self.data_path = data_path
 
         self.interp = Image.ANTIALIAS
@@ -30,11 +30,11 @@ class depthDataset(data.Dataset):
         self.loader = pil_loader
         self.to_tensor = transforms.ToTensor()
         if is_train:
-            self.gts_folder = os.path.join(data_path, "train", "groundtruth")
-            self.img_folder = os.path.join(data_path, "train", "image")
+            self.imgR_folder = os.path.join(data_path, "train", "image_right")
+            self.imgL_folder = os.path.join(data_path, "train", "image_left")
         else:
-            self.gts_folder = os.path.join(data_path, "val", "groundtruth")
-            self.img_folder = os.path.join(data_path, "val", "image")
+            self.imgR_folder = os.path.join(data_path, "val", "image_right")
+            self.imgL_folder = os.path.join(data_path, "val", "image_left")
 
 
 
@@ -45,36 +45,37 @@ class depthDataset(data.Dataset):
         return self.to_tensor(color)
 
 
-
-    def get_depth(self, path, do_flip):
-        depth_png = Image.open(path)
-
-        depth_png = depth_png.resize(self.resize_shape, Image.NEAREST)
-        if do_flip:
-            depth_png = depth_png.transpose(Image.FLIP_LEFT_RIGHT)
-        depth =  np.array(depth_png, dtype = int)
-
-        assert (np.max(depth_png) > 255)
-        depth = np.array(depth_png).astype(np.float) / 256.
-        depth[depth_png == 0] = -1.
-
-
-        return torch.from_numpy(depth.astype(np.float32))
+    #
+    # def get_depth(self, path, do_flip):
+    #     depth_png = Image.open(path)
+    #
+    #     depth_png = depth_png.resize(self.resize_shape, Image.NEAREST)
+    #     if do_flip:
+    #         depth_png = depth_png.transpose(Image.FLIP_LEFT_RIGHT)
+    #     depth =  np.array(depth_png, dtype = int)
+    #
+    #     assert (np.max(depth_png) > 255)
+    #     depth = np.array(depth_png).astype(np.float) / 256.
+    #     depth[depth_png == 0] = -1.
+    #
+    #
+    #     return torch.from_numpy(depth.astype(np.float32))
 
     def __len__(self):
-        return len(list(glob.glob1(self.gts_folder, "*.png")))
+        return len(list(glob.glob1(self.imgL_folder, "*.jpg")))
 
     def __getitem__(self, index):
 
-        gts_fn = os.path.join(self.gts_folder, str(index).zfill(5) + ".png")
-        img_fn = os.path.join(self.img_folder, str(index).zfill(5) + ".jpg")
+        imgL_fn = os.path.join(self.imgL_folder, str(index).zfill(5) + ".jpg")
+        imgR_fn = os.path.join(self.imgR_folder, str(index).zfill(5) + ".jpg")
 
         do_flip = self.is_train and random.random() > 0.5
 
-        color = self.get_color(img_fn, do_flip)
-        depth = self.get_depth(gts_fn, do_flip)
+        colorL = self.get_color(imgL_fn, do_flip)
+        colorR = self.get_color(imgR_fn, do_flip)
+        # depth = self.get_depth(gts_fn, do_flip)
 
-        return color, depth
+        return colorL, colorR
 
 
 
