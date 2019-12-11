@@ -33,4 +33,5 @@ cd ..
 python datasetCreator.py
 ```
 baseline = 0.54
-f = 7.215e2
+
+f = 7.215377e+02
