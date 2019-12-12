@@ -36,7 +36,7 @@ class Trainer:
             left, right = data
             if self.use_gpu:
                 left = left.cuda()
-                net = net.cuda()
+                self.net = self.net.cuda()
                 right = right.cuda()
             self.optimizer.zero_grad()
             main_loss = net(left, right_view=right)

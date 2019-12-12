@@ -15,7 +15,7 @@ class MonodepthLoss(nn.modules.Module):
         scaled_imgs = [img]
         s = img.size()
         h = s[2]
-        w = s[3]
+        w = s[3] 
         for i in range(num_scales - 1):
             ratio = 2 ** (i + 1)
             nh = h // ratio
