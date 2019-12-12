@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import importlib
 import torchvision.models as models
-
+from loss import MonodepthLoss
 
 class get_disp(nn.Module):
     def __init__(self, num_in_channels):

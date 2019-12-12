@@ -8,20 +8,32 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from loss import MonodepthLoss
+import pickle
 
 class Trainer:
-    def __init__(self, network, train_loader, optimizer, params_file=None, use_gpu=True):
+    def __init__(self, network, train_loader, optimizer, batch_size, params_file=None, use_gpu=False):
         self.net = network
         self.use_gpu = use_gpu
         self.optimizer = optimizer
-        self.validation = None
-        self.history = []
+        self.validator = None
+        self.history = {"Train": [], "Val": []}
         self.params_file = params_file
         self.train_loader = train_loader
+        self.batch_size = batch_size
+        if use_gpu :
+            self.device = "cuda:0"
+        else:
+            self.device = "cpu"
+
+        self.loss = MonodepthLoss(
+            n=4,
+            SSIM_w=0.85,
+            disp_gradient_w=0.1, lr_w=1).to(self.device)
 
 
-    def setValidation(self, validation):
-        self.validation = validation
+    def setValidator(self, validator):
+        self.validator = validator
 
     def saveParams(self, path):
         torch.save(self.net.state_dict(), path)
@@ -30,37 +42,53 @@ class Trainer:
         self.net.load_state_dict(torch.load(path))
 
     def train(self):
+        total_loss = 0.0
 
         self.net.train()
+        counter = 0
         for i, data in enumerate(self.train_loader):
             left, right = data
             if self.use_gpu:
                 left = left.cuda()
                 self.net = self.net.cuda()
                 right = right.cuda()
+
+
             self.optimizer.zero_grad()
-            main_loss = net(left, right_view=right)
-            self.history.append(main_loss.item())
-            main_loss.backward()
+            disps = self.model(left)
+            loss = self.loss_function(disps, [left, right])
+            loss.backward()
             self.optimizer.step()
+            total_loss += loss.item()
+            counter += 1
+
+        main_loss = total_loss / (counter * self.batch_size)
 
         return main_loss
 
     def run_train(self, epoch):
         if self.params_file:
             self.loadModel(self.params_file)
-        if self.validation:
-            prev_score = self.validation.validate(self.net)
+        prev_score = np.inf
+        if self.validator:
+            prev_score = self.validator.validate(self.net)
+
         for e in range(epoch):
+
             loss = self.train()
             print("Epoch: {} Loss: {}".format(e, loss))
-            if self.validation:
-                val_score = self.validation.validate(self.net)
-                if val_score > prev_score:
+            self.history["Train"].append(loss)
+
+            if self.validator:
+                val_score = self.validator.validate(self.net)
+                self.history["Val"].append(val_score)
+                if val_score < prev_score:
                     print("update model file with prev_score {} and current score {}".format(prev_score, val_score))
                     self.saveParams('params.pkl')
                     prev_score = val_score
 
+            with open('train_history.pickle', 'wb') as handle:
+                pickle.dump(self.history, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     def copyNetwork(self):
         return copy.deepcopy(self.net)

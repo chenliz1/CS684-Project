@@ -11,11 +11,14 @@ from torch.utils.data import DataLoader
 from loss import MonodepthLoss
 
 class Validator:
-    def __init__(self, network, val_loader, batch_size, params_file=None, use_gpu=True):
-        self.net = network
+    def __init__(self, val_loader, batch_size, params_file=None, use_gpu=False):
         self.use_gpu = use_gpu
         self.params_file = params_file
         self.val_loader = val_loader
+        if use_gpu :
+            self.device = "cuda:0"
+        else:
+            self.device = "cpu"
         self.loss = MonodepthLoss(
             n=4,
             SSIM_w=0.85,
@@ -24,14 +27,10 @@ class Validator:
         self.batch_size = batch_size
 
 
-    def loadModel(self, path):
-        self.net.load_state_dict(torch.load(path))
+    def validate(self, network):
 
-    def validate(self):
+        network.eval()
 
-        self.net.eval()
-        if self.params_file:
-            self.loadModel(self.params_file)
         total_loss = 0
         counter = 0
         for i, data in enumerate(self.val_loader):
@@ -39,17 +38,17 @@ class Validator:
 
             if self.use_gpu:
                 left = left.cuda()
-                net = self.net.cuda()
+                network = network.cuda()
                 right = right.cuda()
 
-            model_outputs = self.net(left)
+            model_outputs = network(left)
 
             loss = self.loss(model_outputs, [left, right])
             self.val_losses.append(loss.item())
             total_loss += loss.item()
             counter += 1
 
-        total_loss /= self.val_size / counter
+        total_loss /= self.batch_size * counter
 
         return total_loss
 
