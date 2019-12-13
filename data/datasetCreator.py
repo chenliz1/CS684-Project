@@ -27,7 +27,9 @@ def makeDirs():
             if not (os.path.isdir(os.path.join(str, target))):
                 os.mkdir(os.path.join(str, target))
 
-
+    for target in ["gt_left", "gt_right"]:
+            if not (os.path.isdir(os.path.join("dataset/val", target))):
+                os.mkdir(os.path.join("dataset/val", target))
 
 def valImages(img_path, gts_path, target_path):
     imgL_list = list(glob.glob1(img_path, "*_02.png"))
@@ -36,16 +38,16 @@ def valImages(img_path, gts_path, target_path):
     imgR_list = list(glob.glob1(img_path, "*_03.png"))
     imgR_list.sort()
 
-    # gtsL_list = list(glob.glob1(gts_path, "*_02.png"))
-    # gtsL_list.sort()
-    #
-    # gtsR_list = list(glob.glob1(gts_path, "*_03.png"))
-    # gtsR_list.sort()
+    gtsL_list = list(glob.glob1(gts_path, "*_02.png"))
+    gtsL_list.sort()
+    
+    gtsR_list = list(glob.glob1(gts_path, "*_03.png"))
+    gtsR_list.sort()
 
     target_imgL_path = os.path.join(target_path, "image_left/")
     target_imgR_path = os.path.join(target_path, "image_right/")
-    # target_gtsL_path = os.path.join(target_path, "groundtruth_left/")
-    # target_gtsR_path = os.path.join(target_path, "groundtruth_right/")
+    target_gtsL_path = os.path.join(target_path, "gt_left/")
+    target_gtsR_path = os.path.join(target_path, "gt_right/")
 
     for i in range(len(imgL_list)):
         target_name = str(i).zfill(5)
@@ -58,8 +60,11 @@ def valImages(img_path, gts_path, target_path):
         imgR = imgR.convert('RGB')
         imgR.save(os.path.join(target_imgR_path, target_name + ".jpg"))
 
-        # gts = Image.open(os.path.join(gts_path, gts_list[i]))
-        # gts.save(os.path.join(target_gts_path, target_name + ".png"))
+        gtsL = Image.open(os.path.join(gts_path, gtsL_list[i]))
+        gtsL.save(os.path.join(target_gtsL_path, target_name + ".png"))
+
+        gtsR = Image.open(os.path.join(gts_path, gtsR_list[i]))
+        gtsR.save(os.path.join(target_gtsR_path, target_name + ".png"))
 
 
 def trainImages(kitti, annotation, target_path):
@@ -100,5 +105,5 @@ def trainImages(kitti, annotation, target_path):
 
 
 makeDirs()
-trainImages(kitti, annotation, target_train_path)
+# trainImages(kitti, annotation, target_train_path)
 valImages(val_img_path, val_gts_path, target_val_path)

@@ -7,6 +7,10 @@ import numpy as np
 import copy
 from PIL import Image  # using pillow-simd for increased speed
 
+import scipy
+import skimage
+from pypardiso import spsolve
+
 import torch
 import torch.utils.data as data
 from torchvision import transforms
@@ -141,3 +145,158 @@ class TwoViewDataset(data.Dataset):
         return colorL, colorR
 
 
+class GroundTruth(data.Dataset):
+    def __init__(self, 
+                 data_path,
+                 resize_shape=(512,256), 
+                 is_train=False,
+                 transforms=JointToTensor(),
+                 sanity_check=None):
+        super(GroundTruth, self).__init__()
+        self.data_path = data_path
+
+        self.interp = Image.ANTIALIAS
+        self.resize_shape = resize_shape
+        self.is_train = is_train
+        self.transforms=transforms
+        self.loader = pil_loader
+        
+        self.imgR_folder = os.path.join(data_path, "val", "image_right")
+        self.imgL_folder = os.path.join(data_path, "val", "image_left")
+        self.gtR_folder = os.path.join(data_path, "val", "gt_right")
+        self.gtL_folder = os.path.join(data_path, "val", "gt_left")
+        
+        self.imgR=[os.path.join(self.imgR_folder, x) for x in os.listdir(self.imgR_folder)]
+        self.imgL=[os.path.join(self.imgL_folder, x) for x in os.listdir(self.imgL_folder)]
+        self.gtR=[os.path.join(self.gtR_folder, x) for x in os.listdir(self.gtR_folder)]
+        self.gtL=[os.path.join(self.gtL_folder, x) for x in os.listdir(self.gtL_folder)]
+
+    def depth_read(self, filename):
+
+        depth_png = np.array(Image.open(filename).resize(self.resize_shape), dtype=int)
+        assert(np.max(depth_png) > 255)
+
+        depth = depth_png.astype(np.float) / 256.
+        depth[depth_png == 0] = -1.
+        return depth
+
+
+    def get_color(self, path, do_flip):
+        color = self.loader(path)
+        if do_flip:
+            color = color.transpose(Image.FLIP_LEFT_RIGHT)
+        return self.to_tensor(color)
+
+    def depth_colorization(self, imgRgb=None, imgDepthInput=None, alpha=1):
+        imgIsNoise = imgDepthInput == 0
+        maxImgAbsDepth = np.max(imgDepthInput)
+        imgDepth = imgDepthInput / maxImgAbsDepth
+        imgDepth[imgDepth > 1] = 1
+        (H, W) = imgDepth.shape
+        numPix = H * W
+        indsM = np.arange(numPix).reshape((W, H)).transpose()
+        knownValMask = (imgIsNoise == False).astype(int)
+        grayImg = skimage.color.rgb2gray(imgRgb)
+        winRad = 1
+        len_ = 0
+        absImgNdx = 0
+        len_window = (2 * winRad + 1) ** 2
+        len_zeros = numPix * len_window
+
+        cols = np.zeros(len_zeros) - 1
+        rows = np.zeros(len_zeros) - 1
+        vals = np.zeros(len_zeros) - 1
+        gvals = np.zeros(len_window) - 1
+
+        for j in range(W):
+            for i in range(H):
+                nWin = 0
+                for ii in range(max(0, i - winRad), min(i + winRad + 1, H)):
+                    for jj in range(max(0, j - winRad), min(j + winRad + 1, W)):
+                        if ii == i and jj == j:
+                            continue
+
+                        rows[len_] = absImgNdx
+                        cols[len_] = indsM[ii, jj]
+                        gvals[nWin] = grayImg[ii, jj]
+
+                        len_ = len_ + 1
+                        nWin = nWin + 1
+
+                curVal = grayImg[i, j]
+                gvals[nWin] = curVal
+                c_var = np.mean((gvals[:nWin + 1] - np.mean(gvals[:nWin+ 1])) ** 2)
+
+                csig = c_var * 0.6
+                mgv = np.min((gvals[:nWin] - curVal) ** 2)
+                if csig < -mgv / np.log(0.01):
+                    csig = -mgv / np.log(0.01)
+
+                if csig < 2e-06:
+                    csig = 2e-06
+
+                gvals[:nWin] = np.exp(-(gvals[:nWin] - curVal) ** 2 / csig)
+                gvals[:nWin] = gvals[:nWin] / sum(gvals[:nWin])
+                vals[len_ - nWin:len_] = -gvals[:nWin]
+
+                # Now the self-reference (along the diagonal).
+                rows[len_] = absImgNdx
+                cols[len_] = absImgNdx
+                vals[len_] = 1  # sum(gvals(1:nWin))
+
+                len_ = len_ + 1
+                absImgNdx = absImgNdx + 1
+
+        vals = vals[:len_]
+        cols = cols[:len_]
+        rows = rows[:len_]
+        A = scipy.sparse.csr_matrix((vals, (rows, cols)), (numPix, numPix))
+
+        rows = np.arange(0, numPix)
+        cols = np.arange(0, numPix)
+        vals = (knownValMask * alpha).transpose().reshape(numPix)
+        G = scipy.sparse.csr_matrix((vals, (rows, cols)), (numPix, numPix))
+
+        A = A + G
+        b = np.multiply(vals.reshape(numPix), imgDepth.flatten('F'))
+
+        #print ('Solving system..')
+
+        new_vals = spsolve(A, b)
+        new_vals = np.reshape(new_vals, (H, W), 'F')
+
+        #print ('Done.')
+
+        denoisedDepthImg = new_vals * maxImgAbsDepth
+        
+        output = denoisedDepthImg.reshape((H, W)).astype('float32')
+
+        output = np.multiply(output, (1-knownValMask)) + imgDepthInput
+        
+        return output
+
+    def __len__(self):
+        return len(list(glob.glob1(self.imgL_folder, "*.jpg")))
+
+    def __getitem__(self, index):
+        #print(np.array(Image.open(self.imgR[index]).convert('RGB')).shape)
+        colorR=Image.open(self.imgR[index]).convert('RGB').resize(self.resize_shape)
+        colorL=Image.open(self.imgL[index]).convert('RGB').resize(self.resize_shape)
+        #print(np.array(colorR).shape)
+        gtR=self.depth_read(self.gtR[index])
+        gtL=self.depth_read(self.gtL[index])
+
+
+        colorR_N = np.array(colorR)/255.0
+        colorL_N = np.array(colorL)/255.0
+
+
+        gtR = self.depth_colorization(imgRgb=colorR_N, imgDepthInput=gtR, alpha=1)
+        gtL = self.depth_colorization(imgRgb=colorL_N, imgDepthInput=gtL, alpha=1)
+        
+        # if self.transforms is not None:
+        #     colorR, colorL = self.transforms(colorR, colorL)
+        #     gtR, gtL = self.transforms(gtR, gtL)
+
+
+        return gtL, gtR
