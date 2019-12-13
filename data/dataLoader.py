@@ -11,13 +11,6 @@ import torch
 import torch.utils.data as data
 from torchvision import transforms
 import torchvision.transforms.functional as tF
-
-def pil_loader(path):
-    # open path as file to avoid ResourceWarning
-    # (https://github.com/python-pillow/Pillow/issues/835)
-    with open(path, 'rb') as f:
-        with Image.open(f) as img:
-            return img.convert('RGB')
         
 class JointRandomFlip(object):
     def __call__(self, L, R):
@@ -99,7 +92,8 @@ class TwoViewDataset(data.Dataset):
                  resize_shape=(512,256), 
                  is_train=False,
                  transforms=None,
-                 sanity_check=None):
+                 sanity_check=None,
+                 color='RGB'):
         super(TwoViewDataset, self).__init__()
         self.data_path = data_path
 
@@ -107,7 +101,7 @@ class TwoViewDataset(data.Dataset):
         self.resize_shape = resize_shape
         self.is_train = is_train
         self.transforms=transforms
-        self.loader = pil_loader
+        self.color = color
         
         if is_train:
             self.imgR_folder = os.path.join(data_path, "train", "image_right")
@@ -120,20 +114,14 @@ class TwoViewDataset(data.Dataset):
         self.imgR=[os.path.join(self.imgR_folder, x) for x in os.listdir(self.imgR_folder)]
         self.imgL=[os.path.join(self.imgL_folder, x) for x in os.listdir(self.imgL_folder)]
 
-    def get_color(self, path, do_flip):
-        color = self.loader(path)
-        if do_flip:
-            color = color.transpose(Image.FLIP_LEFT_RIGHT)
-        return self.to_tensor(color)
-
 
     def __len__(self):
         return len(list(glob.glob1(self.imgL_folder, "*.jpg")))
 
     def __getitem__(self, index):
         #print(np.array(Image.open(self.imgR[index]).convert('RGB')).shape)
-        colorR=Image.open(self.imgR[index]).convert('RGB').resize(self.resize_shape)
-        colorL=Image.open(self.imgL[index]).convert('RGB').resize(self.resize_shape)
+        colorR=Image.open(self.imgR[index]).convert(self.color).resize(self.resize_shape)
+        colorL=Image.open(self.imgL[index]).convert(self.color).resize(self.resize_shape)
         #print(np.array(colorR).shape)
         
         if self.transforms is not None:
