@@ -101,7 +101,7 @@ class ResnetDispModel(nn.Module):
         skip3 = x1
         skip4 = x2
         skip5 = x3
-        print(skip4.size())
+        # print(skip4.size())
 
         # decoder
         upconv6 = self.upconv6(x4)
@@ -109,7 +109,7 @@ class ResnetDispModel(nn.Module):
         iconv6 = self.iconv6(concat6)
 
         upconv5 = self.upconv5(iconv6)
-        print(upconv5.size())
+        # print(upconv5.size())
         concat5 = torch.cat((upconv5, skip4), 1)
         iconv5 = self.iconv5(concat5)
 
