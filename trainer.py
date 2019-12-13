@@ -55,7 +55,7 @@ class Trainer:
 
 
             self.optimizer.zero_grad()
-            disps = self.model(left)
+            disps = self.net(left)
             loss = self.loss_function(disps, [left, right])
             loss.backward()
             self.optimizer.step()
