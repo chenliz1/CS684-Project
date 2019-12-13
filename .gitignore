@@ -3,5 +3,6 @@ data/data_depth_annotated
 data/depth_selection
 data/kitti_data
 data/dataset
-
+*.pkl
+*.pickle
 *.pyc
