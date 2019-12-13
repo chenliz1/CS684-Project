@@ -26,7 +26,7 @@ class Trainer:
         else:
             self.device = "cpu"
 
-        self.loss = MonodepthLoss(
+        self.loss_function = MonodepthLoss(
             n=4,
             SSIM_w=0.85,
             disp_gradient_w=0.1, lr_w=1).to(self.device)

@@ -96,7 +96,7 @@ class TwoViewDataset(data.Dataset):
     
     def __init__(self, 
                  data_path,
-                 resize_shape=(1242, 375), 
+                 resize_shape=(512,256), 
                  is_train=False,
                  transforms=None,
                  sanity_check=None):
@@ -131,8 +131,10 @@ class TwoViewDataset(data.Dataset):
         return len(list(glob.glob1(self.imgL_folder, "*.jpg")))
 
     def __getitem__(self, index):
-        colorR=Image.open(self.imgR[index]).convert('RGB')
-        colorL=Image.open(self.imgL[index]).convert('RGB')
+        print(np.array(Image.open(self.imgR[index]).convert('RGB')).shape)
+        colorR=Image.open(self.imgR[index]).convert('RGB').resize(self.resize_shape)
+        colorL=Image.open(self.imgL[index]).convert('RGB').resize(self.resize_shape)
+        print(np.array(colorR).shape)
         
         if self.transforms is not None:
             colorR, colorL = self.transforms(colorR, colorL)
