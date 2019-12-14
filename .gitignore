@@ -6,3 +6,4 @@ data/dataset
 *.pkl
 *.pickle
 *.pyc
+*/.ipynb_checkpoints/*
