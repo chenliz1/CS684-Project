@@ -7,3 +7,4 @@ data/dataset
 *.pickle
 *.pyc
 */.ipynb_checkpoints/*
+*-checkpoint.ipynb

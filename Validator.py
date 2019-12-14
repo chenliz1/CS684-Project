@@ -48,7 +48,7 @@ class Validator:
             total_loss += loss.item()
             counter += 1
 
-        total_loss /= self.batch_size * counter
+        total_loss /= counter
 
         return total_loss
 

@@ -35,6 +35,9 @@ class Trainer:
     def setValidator(self, validator):
         self.validator = validator
 
+    def setOptimizer(self, opt):
+        self.optimizer = opt
+
     def saveParams(self, path):
         torch.save(self.net.state_dict(), path)
 
@@ -62,7 +65,7 @@ class Trainer:
             total_loss += loss.item()
             counter += 1
 
-        main_loss = total_loss / (counter * self.batch_size)
+        main_loss = total_loss / counter
 
         return main_loss
 
