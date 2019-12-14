@@ -93,7 +93,7 @@ class Trainer:
                     self.saveParams(save_name)
                     prev_score = val_score
 
-            with open('epoch{}_train_history.pickle'.format(len(self.history["Train"])), 'wb') as handle:
+            with open('epoch{}_train_history.pickle'.format(epoch), 'wb') as handle:
                 pickle.dump(self.history, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     def copyNetwork(self):
