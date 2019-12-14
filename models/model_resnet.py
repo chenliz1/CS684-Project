@@ -33,6 +33,20 @@ class iconv(nn.Module):
         x = self.iconv(F.pad(x, self.p2d))
         return F.elu(x, inplace=True)
 
+
+class iconv_dilate(nn.Module):
+    def __init__(self, num_in_channels, num_out_channels, kernel_size, stride, dilation):
+        super(iconv, self).__init__()
+        p = int(np.floor((kernel_size - 1) / 2))
+        self.p2d = p2d = (p, p, p, p)
+
+        self.iconv = nn.Sequential(nn.Conv2d(num_in_channels, num_out_channels, kernel_size=kernel_size, stride=stride, dilation=dilation),
+                                  nn.BatchNorm2d(num_out_channels))
+
+    def forward(self, x):
+        x = self.iconv(F.pad(x, self.p2d))
+        return F.elu(x, inplace=True)
+
 class upconv(nn.Module):
     def __init__(self, num_in_channels, num_out_channels, kernel_size, scale):
         super(upconv, self).__init__()
@@ -43,14 +57,34 @@ class upconv(nn.Module):
         x = nn.functional.interpolate(x, scale_factor=self.scale, mode='bilinear', align_corners=True)
         return self.conv1(x)
 
+class upconv_dilate(nn.Module):
+    def __init__(self, num_in_channels, num_out_channels, kernel_size, scale, dilation):
+        super(upconv, self).__init__()
+        self.scale = scale
+        self.conv1 = iconv(num_in_channels, num_out_channels, kernel_size, 1, dilation)
+
+    def forward(self, x):
+        x = nn.functional.interpolate(x, scale_factor=self.scale, mode='bilinear', align_corners=True)
+        return self.conv1(x)
+
 class ResnetDispModel(nn.Module):
 
-    def __init__(self, num_input_channel, encoder='resnet18', pretrained=True, criterion=None):
+    def __init__(self, num_input_channel=3, encoder='resnet18', pretrained=True, dilate=False):
         super(ResnetDispModel, self).__init__()
-        self.criterion = criterion
         self.num_input_channel = num_input_channel
-        resnet = models.resnet18(pretrained=pretrained)
-        filters_res18 = [64, 128, 256, 512]
+
+
+        assert encoder in ['resnet18', 'resnet34', 'resnet50', \
+                           'resnet101', 'resnet152'], \
+            "Incorrect encoder type"
+        if encoder in ['resnet18', 'resnet34']:
+            filters = [64, 128, 256, 512]
+        else:
+            filters = [256, 512, 1024, 2048]
+
+
+
+        resnet = getattr(importlib.import_module("torchvision.models"), encoder)(pretrained=pretrained)
         resnet_pool1 = list(resnet.children())[1:4]
 
         self.conv1 = resnet.conv1
@@ -61,14 +95,21 @@ class ResnetDispModel(nn.Module):
         self.layer3 = resnet.layer3
         self.layer4 = resnet.layer4
 
-        self.upconv6 = upconv(filters_res18[3], 512, 3, 2)
-        self.iconv6 = iconv(filters_res18[2] + 512, 512, 3, 1)
+        if dilate:
+            self.upconv6 = upconv(filters[3], 512, 3, 2, 2)
+            self.iconv6 = iconv_dilate(filters[2] + 512, 512, 3, 1, 2)
 
-        self.upconv5 = upconv(512, 256, 3, 2)
-        self.iconv5 = iconv(filters_res18[1] + 256, 256, 3, 1)
+            self.upconv5 = upconv(512, 256, 3, 2, 3)
+            self.iconv5 = iconv_dilate(filters[1] + 256, 256, 3, 1, 4)
+        else:
+            self.upconv6 = upconv(filters[3], 512, 3, 2)
+            self.iconv6 = iconv(filters[2] + 512, 512, 3, 1)
+
+            self.upconv5 = upconv(512, 256, 3, 2)
+            self.iconv5 = iconv(filters[1] + 256, 256, 3, 1)
 
         self.upconv4 = upconv(256, 128, 3, 2)
-        self.iconv4 = iconv(filters_res18[0] + 128, 128, 3, 1)
+        self.iconv4 = iconv(filters[0] + 128, 128, 3, 1)
         self.disp4_layer = get_disp(128)
 
         self.upconv3 = upconv(128, 64, 3, 1) #
@@ -140,4 +181,3 @@ class ResnetDispModel(nn.Module):
         return self.disp1, self.disp2, self.disp3, self.disp4
 
 
-ResnetDispModel(3)
