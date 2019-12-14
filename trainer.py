@@ -72,6 +72,9 @@ class Trainer:
     def run_train(self, epoch):
         if self.params_file:
             self.loadModel(self.params_file)
+            save_name = "epoch{}_".format(epoch) + self.params_file
+        else:
+            save_name = "epoch{}_params.pkl".format(epoch)
         prev_score = np.inf
         if self.validator:
             prev_score = self.validator.validate(self.net)
@@ -87,10 +90,10 @@ class Trainer:
                 self.history["Val"].append(val_score)
                 if val_score < prev_score:
                     print("update model file with prev_score {} and current score {}".format(prev_score, val_score))
-                    self.saveParams('params.pkl')
+                    self.saveParams(save_name)
                     prev_score = val_score
 
-            with open('train_history.pickle', 'wb') as handle:
+            with open('epoch{}_train_history.pickle'.format(len(self.history["Train"])), 'wb') as handle:
                 pickle.dump(self.history, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     def copyNetwork(self):
