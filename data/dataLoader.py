@@ -9,7 +9,7 @@ from PIL import Image  # using pillow-simd for increased speed
 
 import scipy
 import skimage
-from pypardiso import spsolve
+from scipy.sparse.linalg import spsolve
 
 import torch
 import torch.utils.data as data
