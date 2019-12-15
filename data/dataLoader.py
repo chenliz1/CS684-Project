@@ -21,42 +21,7 @@ class JointRandomFlip(object):
         if np.random.random_sample()>0.5:
             return (tF.hflip(R),tF.hflip(L))
         return (L,R)
-    
-class JointRandomResizeCrop(object):
-    def __init__(self, minimum_scale, maximum_scale):
-        """
-        params:
-        size (int) : size of the center crop
-        """
-        self.minimum_scale = minimum_scale
-        self.maximum_scale = maximum_scale
-        self.scaleDiff = maximum_scale - minimum_scale
-        
-    def __call__(self, img, target):
-
-        
-
-        if isinstance(img, torch.Tensor) and img.dim() > 2:
-            width, height = img.shape[-2:][::-1]
-        else:
-            width, height = img.size
-
-
-        rand = random.random()
-        scale = self.minimum_scale + rand*self.scaleDiff
-        r_width = int(np.rint(scale*width))
-        r_height = int(np.rint(scale*height))
-        min_edge = min(r_width, r_height)
-        resiezd_img = transforms.Resize(int(min_edge))(img)
-        resiezd_target = transforms.Resize(int(min_edge))(target)
-        h = min(r_height, height)
-        w = min(r_width, width)
-        i = random.randint(0, r_height-h)
-        j = random.randint(0, r_width-w)
-        resiezd_crop_img = transforms.functional.resized_crop(resiezd_img, i, j, h, w, (width, height))
-        resiezd_crop_target = transforms.functional.resized_crop(resiezd_target, i, j, h, w, (width, height))
-        return (resiezd_crop_img, resiezd_crop_target)
-    
+       
 class JointRandomColorAug(object):
 
     def __init__(self,gamma=(0.8,1.2),brightness=(0.5,2.0),color_shift=(0.8,1.2)):
