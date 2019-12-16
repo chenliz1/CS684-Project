@@ -17,8 +17,8 @@ from torchvision import transforms
 import torchvision.transforms.functional as tF
         
 class JointRandomFlip(object):
-    def __call__(self, L, R):
-        if np.random.random_sample()>0.5:
+    def __call__(self, L, R, p=0.5):
+        if np.random.random_sample()> p:
             return (tF.hflip(R),tF.hflip(L))
         return (L,R)
        
