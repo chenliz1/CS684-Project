@@ -35,7 +35,7 @@ def postprocess(image, network): #input is PIL image
 
     return dl * wl + d_l * w_l
 
-
+#from postprocessing import postprocess
 #sample = TwoViewDataset("data/dataset/", is_train=False)[index of sample][0: left or 1: right]
 #sample = TwoViewDataset("data/dataset/", is_train=False)[55][0]
 #disp_np = postprocess(sample, network)
