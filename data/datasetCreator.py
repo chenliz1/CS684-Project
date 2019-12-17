@@ -4,7 +4,6 @@ from PIL import Image
 import numpy as np
 
 train_data_folders = ["2011_09_26_drive_0001_sync", "2011_09_29_drive_0071_sync"]
-annotation = "data_depth_annotated/train/"
 kitti = "kitti_data/2011_09_26"
 
 val_img_path = "depth_selection/val_selection_cropped/image/"
@@ -67,7 +66,7 @@ def valImages(img_path, gts_path, target_path):
         gtsR.save(os.path.join(target_gtsR_path, target_name + ".png"))
 
 
-def trainImages(kitti, annotation, target_path):
+def trainImages(kitti, target_path):
     train_data_folders = list(glob.glob1(kitti, "2011_09_26_drive_*_sync"))
     train_data_folders.sort()
 
@@ -105,5 +104,5 @@ def trainImages(kitti, annotation, target_path):
 
 
 makeDirs()
-# trainImages(kitti, annotation, target_train_path)
+trainImages(kitti, target_train_path)
 valImages(val_img_path, val_gts_path, target_val_path)
