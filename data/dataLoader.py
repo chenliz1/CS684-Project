@@ -15,6 +15,13 @@ import torch
 import torch.utils.data as data
 from torchvision import transforms
 import torchvision.transforms.functional as tF
+
+def pil_loader(path):
+    # open path as file to avoid ResourceWarning
+    # (https://github.com/python-pillow/Pillow/issues/835)
+    with open(path, 'rb') as f:
+        with Image.open(f) as img:
+            return img.convert('RGB')
         
 class JointRandomFlip(object):
     def __call__(self, L, R, p=0.5):
